@@ -21,19 +21,19 @@ import type { ScreenTimeData, ScreenTimeSummary } from '@/types'
 
 export function dataToSummary(data: ScreenTimeData): ScreenTimeSummary {
   const total = data.events.reduce((acc, event) => acc + event.duration, 0)
-  const category_totals: { [key: string]: number } = {}
+  const categoryTotals: { [key: string]: number } = {}
   data.events.forEach((event) => {
     const category = event.data.category
-    if (!category_totals[category]) {
-      category_totals[category] = 0
+    if (!categoryTotals[category]) {
+      categoryTotals[category] = 0
     }
-    category_totals[category] += event.duration
+    categoryTotals[category] += event.duration
   })
   return {
     userId: data.userId,
     total,
     date: data.date,
-    category_totals
+    categoryTotals
   }
 }
 
@@ -50,10 +50,14 @@ export async function addScreenTimeData(userId: number, data: ScreenTimeData) {
   }
 }
 
-export async function getScreenTimeData(userId: string): Promise<ScreenTimeData[] | null> {
-  const colPath = `screentime/${userId}/${userId}`
-  const colRef = collection(db, colPath)
-  const snapshot = await getDocs(colRef)
+export async function getScreenTimeData(userId: string, since: Date | null = null, _public: Boolean = true): Promise<ScreenTimeData[] | null> {
+  const q = query(
+    collection(db, 'screentime/' + userId + '/' + userId),
+    // where('date', '>=', since || new Date('1900-1-1')),
+    where('public', '==', _public)
+  )
+
+  const snapshot = await getDocs(q)
   if (snapshot.empty) {
     return null
   }
